@@ -1,5 +1,6 @@
 '''
-카메라 IP 설정 : sudo ip addr add 169.254.1.100/16 dev enp8s0
+카메라 IP 설정 (Linux) : sudo ip addr add 169.254.1.100/16 dev enp8s0
+카메라 IP 설정 (Window) : New-NetIPAddress -InterfaceAlias "이더넷 2" -IPAddress 169.254.1.100 -PrefixLength 16  
 '''
 
 from pypylon import pylon

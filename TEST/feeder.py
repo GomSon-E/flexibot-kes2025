@@ -1,3 +1,8 @@
+'''
+Feeder IP 설정 (Linux) : sudo ip addr add 192.168.1.50/24 dev enp10s0
+Feeder IP 설정 (Window) : NNew-NetIPAddress -InterfaceAlias "이더넷 3" -IPAddress 192.168.1.50 -PrefixLength 24   
+'''
+
 from pymodbus.client import ModbusTcpClient
 import time
 
