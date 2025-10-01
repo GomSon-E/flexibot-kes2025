@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레고 & 블럭</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #FFF9E6;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 100%;
+            height: 100vh;
+        }
+
+        /* 메인 페이지 */
+        .main-page {
+            display: flex;
+            height: 100vh;
+            gap: 0;
+        }
+
+        .main-button {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.3s;
+            position: relative;
+        }
+
+        .main-button:first-child {
+            background: linear-gradient(135deg, #FFB6C1, #FF69B4);
+        }
+
+        .main-button:last-child {
+            background: linear-gradient(135deg, #87CEEB, #4FB3E8);
+        }
+
+        .main-button:hover {
+            transform: scale(1.05);
+        }
+
+        .main-button h2 {
+            font-size: 48px;
+            color: white;
+            text-align: center;
+            text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
+            font-weight: bold;
+        }
+
+        /* 서브 페이지 */
+        .sub-page {
+            display: none;
+            background: #FFF9E6;
+            min-height: 100vh;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .sub-page.active {
+            display: block;
+        }
+
+        .back-button {
+            background: #FF6B9D;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            margin-bottom: 30px;
+            transition: background 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(255, 107, 157, 0.3);
+        }
+
+        .back-button:hover {
+            background: #FF4081;
+            transform: scale(1.05);
+        }
+
+        .page-title {
+            font-size: 48px;
+            color: #FF6B9D;
+            margin-bottom: 40px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+            padding: 20px;
+        }
+
+        /* 레고 페이지는 훨씬 더 큰 이미지 */
+        #legoPage .image-grid {
+            grid-template-columns: repeat(auto-fill, minmax(600px, 1fr));
+        }
+
+        #legoPage .image-placeholder {
+            height: 600px;
+        }
+        
+        #legoPage .image-item {
+            padding: 30px;
+        }
+        
+        #legoPage .image-title {
+            font-size: 32px;
+        }
+
+        .image-item {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .image-item:hover {
+            transform: translateY(-10px);
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 200px;
+            /* background: linear-gradient(135deg, #FFE082 0%, #FFAB91 100%); */
+            border-radius: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 18px;
+            color: white;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        #blockPage .image-placeholder img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .image-title {
+            font-size: 20px;
+            color: #FF6B9D;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 메인 페이지 -->
+        <div id="mainPage" class="main-page">
+            <div class="main-button" onclick="showPage('lego')">
+                <h2>레고로 그림 그리기</h2>
+            </div>
+            <div class="main-button" onclick="showPage('block')">
+                <h2>블럭으로 알파벳 적기</h2>
+            </div>
+        </div>
+
+        <!-- 레고 페이지 -->
+        <div id="legoPage" class="sub-page">
+            <button class="back-button" onclick="showPage('main')"> 돌아가기</button>
+            <h1 class="page-title">레고로 그림 그리기</h1>
+            <div class="image-grid">
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/heart.png" alt="하트">
+                    </div>
+                    <div class="image-title">하트</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/fish.png" alt="물고기">
+                    </div>
+                    <div class="image-title">물고기</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/smile.png" alt="스마일">
+                    </div>
+                    <div class="image-title">스마일</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/cat.png" alt="고양이">
+                    </div>
+                    <div class="image-title">고양이</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/panda.png" alt="판다">
+                    </div>
+                    <div class="image-title">판다</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/tulip.png" alt="물고기">
+                    </div>
+                    <div class="image-title">튤립</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 블럭 페이지 -->
+        <div id="blockPage" class="sub-page">
+            <button class="back-button" onclick="showPage('main')">← 돌아가기</button>
+            <h1 class="page-title">블럭으로 알파벳 적기</h1>
+            <div class="image-grid">
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/1.png" alt="A">
+                    </div>
+                    <div class="image-title">A</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/2.png" alt="B">
+                    </div>
+                    <div class="image-title">B</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/3.png" alt="C">
+                    </div>
+                    <div class="image-title">C</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/4.png" alt="D">
+                    </div>
+                    <div class="image-title">D</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/5.png" alt="E">
+                    </div>
+                    <div class="image-title">E</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/6.png" alt="F">
+                    </div>
+                    <div class="image-title">F</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/7.png" alt="G">
+                    </div>
+                    <div class="image-title">G</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/8.png" alt="H">
+                    </div>
+                    <div class="image-title">H</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/9.png" alt="I">
+                    </div>
+                    <div class="image-title">I</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/10.png" alt="J">
+                    </div>
+                    <div class="image-title">J</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/11.png" alt="K">
+                    </div>
+                    <div class="image-title">K</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/12.png" alt="L">
+                    </div>
+                    <div class="image-title">L</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/13.png" alt="M">
+                    </div>
+                    <div class="image-title">M</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/14.png" alt="N">
+                    </div>
+                    <div class="image-title">N</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/15.png" alt="O">
+                    </div>
+                    <div class="image-title">O</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/16.png" alt="P">
+                    </div>
+                    <div class="image-title">P</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/17.png" alt="Q">
+                    </div>
+                    <div class="image-title">Q</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/18.png" alt="R">
+                    </div>
+                    <div class="image-title">R</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/19.png" alt="S">
+                    </div>
+                    <div class="image-title">S</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/20.png" alt="T">
+                    </div>
+                    <div class="image-title">T</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/21.png" alt="U">
+                    </div>
+                    <div class="image-title">U</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/22.png" alt="V">
+                    </div>
+                    <div class="image-title">V</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/23.png" alt="W">
+                    </div>
+                    <div class="image-title">W</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/24.png" alt="X">
+                    </div>
+                    <div class="image-title">X</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/25.png" alt="Y">
+                    </div>
+                    <div class="image-title">Y</div>
+                </div>
+                <div class="image-item">
+                    <div class="image-placeholder">
+                        <img src="./img/26.png" alt="Z">
+                    </div>
+                    <div class="image-title">Z</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPage(page) {
+            const mainPage = document.getElementById('mainPage');
+            const legoPage = document.getElementById('legoPage');
+            const blockPage = document.getElementById('blockPage');
+
+            // 모든 페이지 숨기기
+            mainPage.style.display = 'none';
+            legoPage.classList.remove('active');
+            blockPage.classList.remove('active');
+
+            // 선택된 페이지 보이기
+            if (page === 'main') {
+                mainPage.style.display = 'flex';
+            } else if (page === 'lego') {
+                legoPage.classList.add('active');
+            } else if (page === 'block') {
+                blockPage.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
