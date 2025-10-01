@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>카메라 & 조명 제어</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #FFF9E6;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        .back-button {
+            background: #FF6B9D;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            margin-bottom: 30px;
+            transition: background 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(255, 107, 157, 0.3);
+        }
+
+        .back-button:hover {
+            background: #FF4081;
+            transform: scale(1.05);
+        }
+
+        .page-title {
+            font-size: 48px;
+            color: #FF6B9D;
+            margin-bottom: 40px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .main-container {
+            display: flex;
+            gap: 30px;
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        /* 카메라 화면 (70%) */
+        .camera-section {
+            flex: 0 0 70%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .camera-view {
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .camera-view img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .camera-info {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #FF6B9D;
+            text-align: center;
+        }
+
+        /* 제어 섹션 (30%) */
+        .control-section {
+            flex: 0 0 calc(30% - 30px);
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .control-panel {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+
+        .panel-title {
+            font-size: 24px;
+            color: #FF6B9D;
+            margin-bottom: 25px;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        /* 방향키 패드 */
+        .dpad-container {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .dpad-button {
+            background: linear-gradient(135deg, #87CEEB, #4FB3E8);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(79, 179, 232, 0.3);
+        }
+
+        .dpad-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(79, 179, 232, 0.5);
+        }
+
+        .dpad-button:active {
+            transform: scale(0.95);
+        }
+
+        .dpad-up { grid-column: 2; grid-row: 1; }
+        .dpad-left { grid-column: 1; grid-row: 2; }
+        .dpad-center { 
+            grid-column: 2; 
+            grid-row: 2; 
+            background: linear-gradient(135deg, #FFB6C1, #FF69B4);
+            cursor: default;
+            font-size: 20px;
+        }
+        .dpad-center:hover { 
+            transform: none;
+            box-shadow: 0 4px 10px rgba(255, 105, 180, 0.3);
+        }
+        .dpad-right { grid-column: 3; grid-row: 2; }
+        .dpad-down { grid-column: 2; grid-row: 3; }
+
+        /* ROI 정보 */
+        .roi-info {
+            background: #FFF9E6;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .roi-info p {
+            font-size: 14px;
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .roi-value {
+            font-weight: bold;
+            color: #4FB3E8;
+        }
+
+        /* 슬라이더 컨트롤 */
+        .slider-container {
+            padding: 15px 0;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+            font-size: 16px;
+            color: #666;
+        }
+
+        .slider-value {
+            font-weight: bold;
+            color: #FF6B9D;
+            font-size: 20px;
+        }
+
+        .slider {
+            width: 100%;
+            height: 16px;
+            border-radius: 8px;
+            outline: none;
+            -webkit-appearance: none;
+            background: linear-gradient(to right, #FFB6C1 0%, #FF69B4 100%);
+            box-shadow: 0 2px 10px rgba(255, 105, 180, 0.3);
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            border: 3px solid #FF69B4;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: white;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            border: 3px solid #FF69B4;
+        }
+
+        /* 조명 상태 */
+        .light-status {
+            background: #FFF9E6;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .light-indicator {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin: 10px auto;
+            background: #ddd;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .light-indicator.on {
+            background: #FFD700;
+            box-shadow: 0 0 30px #FFD700;
+        }
+
+        /* 온오프 버튼 */
+        .toggle-button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+
+        .toggle-button.off {
+            background: #ddd;
+            color: #666;
+        }
+
+        .toggle-button.on {
+            background: linear-gradient(135deg, #FFB6C1, #FF69B4);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="goBack()">← 돌아가기</button>
+    <h1 class="page-title">카메라 & 조명 제어</h1>
+    
+    <div class="main-container">
+        <!-- 카메라 화면 (70%) -->
+        <div class="camera-section">
+            <div class="camera-view">
+                <img id="cameraStream" src="/video_feed" alt="Camera Stream">
+            </div>
+            <div class="camera-info">
+                <p>🎯 YOLO 모델로 실시간 객체 인식 중...</p>
+            </div>
+        </div>
+
+        <!-- 제어 섹션 (30%) -->
+        <div class="control-section">
+            <!-- 카메라 ROI 제어 -->
+            <div class="control-panel">
+                <h2 class="panel-title">📷 카메라 ROI 위치</h2>
+                
+                <div class="dpad-container">
+                    <button class="dpad-button dpad-up" onclick="moveROI('up')">▲</button>
+                    <button class="dpad-button dpad-left" onclick="moveROI('left')">◀</button>
+                    <button class="dpad-button dpad-center">ROI</button>
+                    <button class="dpad-button dpad-right" onclick="moveROI('right')">▶</button>
+                    <button class="dpad-button dpad-down" onclick="moveROI('down')">▼</button>
+                </div>
+
+                <div class="roi-info">
+                    <p>현재 ROI 위치</p>
+                    <p>X: <span class="roi-value" id="roiX">684</span> / Y: <span class="roi-value" id="roiY">421</span></p>
+                    <p>크기: <span class="roi-value">1256 × 978</span></p>
+                    <p style="margin-top: 10px; font-size: 12px; color: #999;">이동 단위: 10px</p>
+                </div>
+            </div>
+
+            <!-- 피더 조명 제어 -->
+            <div class="control-panel">
+                <h2 class="panel-title">💡 피더 조명 밝기</h2>
+                
+                <button class="toggle-button off" id="lightToggle" onclick="toggleLight()">
+                    조명 켜기
+                </button>
+
+                <div class="light-status">
+                    <div class="light-indicator" id="lightIndicator"></div>
+                    <p style="color: #666; font-size: 14px;">상태: <span id="lightStatus" style="font-weight: bold;">꺼짐</span></p>
+                </div>
+
+                <div class="slider-container">
+                    <div class="slider-label">
+                        <span>밝기 조절</span>
+                        <span class="slider-value"><span id="brightnessValue">0</span>%</span>
+                    </div>
+                    <input type="range" min="0" max="100" value="0" class="slider" id="brightnessSlider" oninput="updateBrightness(this.value)">
+                </div>
+
+                <div style="background: #FFF9E6; padding: 12px; border-radius: 10px; margin-top: 15px; text-align: center;">
+                    <p style="font-size: 12px; color: #999;">
+                        조명을 먼저 켜고<br>슬라이더로 밝기 조절
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let roiX = 684;
+        let roiY = 421;
+        let lightOn = false;
+        let brightness = 0;
+
+        async function moveROI(direction) {
+            const step = 10;
+            
+            switch(direction) {
+                case 'up':
+                    roiY = Math.max(0, roiY - step);
+                    break;
+                case 'down':
+                    roiY += step;
+                    break;
+                case 'left':
+                    roiX = Math.max(0, roiX - step);
+                    break;
+                case 'right':
+                    roiX += step;
+                    break;
+            }
+
+            document.getElementById('roiX').textContent = roiX;
+            document.getElementById('roiY').textContent = roiY;
+
+            try {
+                await fetch('/api/set_roi', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ x: roiX, y: roiY })
+                });
+            } catch (error) {
+                console.error('ROI 설정 실패:', error);
+            }
+        }
+
+        async function toggleLight() {
+            lightOn = !lightOn;
+            
+            const button = document.getElementById('lightToggle');
+            const indicator = document.getElementById('lightIndicator');
+            const status = document.getElementById('lightStatus');
+
+            if (lightOn) {
+                button.textContent = '조명 끄기';
+                button.className = 'toggle-button on';
+                indicator.classList.add('on');
+                status.textContent = '켜짐';
+                status.style.color = '#FFD700';
+            } else {
+                button.textContent = '조명 켜기';
+                button.className = 'toggle-button off';
+                indicator.classList.remove('on');
+                status.textContent = '꺼짐';
+                status.style.color = '#666';
+                brightness = 0;
+                document.getElementById('brightnessSlider').value = 0;
+                document.getElementById('brightnessValue').textContent = 0;
+            }
+
+            try {
+                await fetch('/api/light_control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        on: lightOn,
+                        brightness: lightOn ? brightness : 0
+                    })
+                });
+            } catch (error) {
+                console.error('조명 제어 실패:', error);
+            }
+        }
+
+        async function updateBrightness(value) {
+            brightness = parseInt(value);
+            document.getElementById('brightnessValue').textContent = brightness;
+
+            if (!lightOn) return;
+
+            try {
+                await fetch('/api/light_control', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        on: true,
+                        brightness: brightness
+                    })
+                });
+            } catch (error) {
+                console.error('밝기 조절 실패:', error);
+            }
+        }
+
+        function goBack() {
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
