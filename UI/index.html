@@ -27,6 +27,7 @@
             display: flex;
             height: 100vh;
             gap: 0;
+            position: relative;
         }
 
         .main-button {
@@ -56,6 +57,28 @@
             text-align: center;
             text-shadow: 3px 3px 6px rgba(0,0,0,0.2);
             font-weight: bold;
+        }
+
+        /* 우상단 제어 버튼 */
+        .control-button {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            width: 70px;
+            height: 70px;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 36px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .control-button:hover {
+            transform: scale(1.1) rotate(90deg);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
 
         /* 서브 페이지 */
@@ -165,6 +188,9 @@
 </head>
 <body>
     <div class="container">
+        <!-- 우상단 제어 버튼 -->
+        <button class="control-button" onclick="goToControl()">⚙️</button>
+
         <!-- 메인 페이지 -->
         <div id="mainPage" class="main-page">
             <div class="main-button" onclick="showPage('lego')">
@@ -414,6 +440,10 @@
             const legoPage = document.getElementById('legoPage');
             const from = legoPage.classList.contains('active') ? 'lego' : 'block';
             window.location.href = `/camera?title=${encodeURIComponent(title)}&from=${from}`;
+        }
+
+        function goToControl() {
+            window.location.href = '/control';
         }
     </script>
 </body>
