@@ -1,0 +1,7 @@
+names:
+  0: lego_piece
+  1: background
+nc: 2
+path: C:\Users\1\Desktop\workspace\flexibot-kes2025\MODEL\data_lego_train
+train: images/train
+val: images/val
