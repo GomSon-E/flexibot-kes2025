@@ -103,6 +103,9 @@ class CameraInference:
         self.current_frame = None
         self.running = False
         
+        # 최신 검출 결과 저장
+        self.latest_results = None
+        
     def set_roi(self, x: int, y: int):
         """ROI 위치 변경"""
         with self.lock:
@@ -140,6 +143,41 @@ class CameraInference:
         threading.Thread(target=self._capture_loop, daemon=True).start()
         return True
     
+    def get_front_centroids(self):
+        """
+        연두색(front) 객체의 중심점 추출
+        
+        Returns:
+            list: [(center_x, center_y), ...] 형태의 중심점 리스트
+        """
+        with self.lock:
+            if self.latest_results is None:
+                return []
+            
+            results = self.latest_results
+        
+        centroids = []
+        
+        if results[0].boxes is not None:
+            boxes = results[0].boxes.xyxy.cpu().numpy()
+            classes = results[0].boxes.cls.cpu().numpy()
+            confs = results[0].boxes.conf.cpu().numpy()
+            
+            for box, cls, conf in zip(boxes, classes, confs):
+                if conf < 0.8:
+                    continue
+                
+                # front 클래스만 처리
+                if int(cls) == 1:
+                    x1, y1, x2, y2 = map(int, box)
+                    center_x = (x1 + x2) // 2
+                    center_y = (y1 + y2) // 2
+                    centroids.append((center_x, center_y))
+
+            print(centroids)
+        
+        return centroids
+    
     def _capture_loop(self):
         """실시간 캡처 및 추론"""
         while self.running and self.camera.IsGrabbing():
@@ -158,6 +196,10 @@ class CameraInference:
                     
                     # YOLO 추론
                     results = self.model(roi_img, verbose=False)
+                    
+                    # 최신 결과 저장
+                    with self.lock:
+                        self.latest_results = results
                     
                     # 커스텀 시각화
                     annotated_frame = roi_img.copy()
