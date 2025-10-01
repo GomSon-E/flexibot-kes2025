@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>실시간 객체 인식</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #FFF9E6;
+            min-height: 100vh;
+            padding: 40px;
+        }
+
+        .back-button {
+            background: #FF6B9D;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 20px;
+            margin-bottom: 30px;
+            transition: background 0.3s;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(255, 107, 157, 0.3);
+        }
+
+        .back-button:hover {
+            background: #FF4081;
+            transform: scale(1.05);
+        }
+
+        .page-title {
+            font-size: 48px;
+            color: #FF6B9D;
+            margin-bottom: 40px;
+            text-align: center;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .camera-container {
+            width: 100%;
+            max-width: 1200px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .camera-view {
+            width: 100%;
+            border-radius: 15px;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .camera-view img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .camera-info {
+            margin-top: 20px;
+            font-size: 18px;
+            color: #FF6B9D;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <button class="back-button" onclick="goBack()">← 돌아가기</button>
+    <h1 class="page-title" id="cameraTitle">실시간 객체 인식</h1>
+    <div class="camera-container">
+        <div class="camera-view">
+            <img id="cameraStream" src="/video_feed" alt="Camera Stream">
+        </div>
+        <div class="camera-info">
+            <p>🎯 YOLO 모델로 실시간 객체 인식 중...</p>
+        </div>
+    </div>
+
+    <script>
+        // URL 파라미터에서 제목 가져오기
+        const urlParams = new URLSearchParams(window.location.search);
+        const title = urlParams.get('title');
+        const from = urlParams.get('from');
+        
+        if (title) {
+            document.getElementById('cameraTitle').textContent = `${title} - 실시간 객체 인식`;
+        }
+
+        function goBack() {
+            window.location.href = `/?page=${from || 'main'}`;
+        }
+    </script>
+</body>
+</html>
