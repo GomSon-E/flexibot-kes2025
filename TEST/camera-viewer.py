@@ -15,7 +15,7 @@ class BaslerViewer:
         self.converter.OutputBitAlignment = pylon.OutputBitAlignment_MsbAligned
         
         # 고정 ROI 설정
-        self.roi = (704, 416, 1166, 982)
+        self.roi = (684, 421, 1256, 978)
         
     def connect_camera(self):
         """카메라 연결"""
