@@ -15,8 +15,6 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #FFF9E6;
             min-height: 100vh;
-            margin: 0;
-            padding: 0;
         }
 
         .container {
@@ -38,7 +36,6 @@
             align-items: center;
             cursor: pointer;
             transition: transform 0.3s;
-            position: relative;
         }
 
         .main-button:first-child {
@@ -133,6 +130,7 @@
             text-align: center;
             transition: transform 0.3s;
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            cursor: pointer;
         }
 
         .image-item:hover {
@@ -142,7 +140,6 @@
         .image-placeholder {
             width: 100%;
             height: 200px;
-            /* background: linear-gradient(135deg, #FFE082 0%, #FFAB91 100%); */
             border-radius: 15px;
             display: flex;
             justify-content: center;
@@ -153,7 +150,7 @@
             font-weight: bold;
         }
 
-        #blockPage .image-placeholder img {
+        .image-placeholder img {
             width: 100%;
             height: 100%;
             object-fit: contain;
@@ -180,42 +177,42 @@
 
         <!-- 레고 페이지 -->
         <div id="legoPage" class="sub-page">
-            <button class="back-button" onclick="showPage('main')"> 돌아가기</button>
+            <button class="back-button" onclick="showPage('main')">← 돌아가기</button>
             <h1 class="page-title">레고로 그림 그리기</h1>
             <div class="image-grid">
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('하트')">
                     <div class="image-placeholder">
                         <img src="./img/heart.png" alt="하트">
                     </div>
                     <div class="image-title">하트</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('물고기')">
                     <div class="image-placeholder">
                         <img src="./img/fish.png" alt="물고기">
                     </div>
                     <div class="image-title">물고기</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('스마일')">
                     <div class="image-placeholder">
                         <img src="./img/smile.png" alt="스마일">
                     </div>
                     <div class="image-title">스마일</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('고양이')">
                     <div class="image-placeholder">
                         <img src="./img/cat.png" alt="고양이">
                     </div>
                     <div class="image-title">고양이</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('판다')">
                     <div class="image-placeholder">
                         <img src="./img/panda.png" alt="판다">
                     </div>
                     <div class="image-title">판다</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('튤립')">
                     <div class="image-placeholder">
-                        <img src="./img/tulip.png" alt="물고기">
+                        <img src="./img/tulip.png" alt="튤립">
                     </div>
                     <div class="image-title">튤립</div>
                 </div>
@@ -227,157 +224,157 @@
             <button class="back-button" onclick="showPage('main')">← 돌아가기</button>
             <h1 class="page-title">블럭으로 알파벳 적기</h1>
             <div class="image-grid">
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('A')">
                     <div class="image-placeholder">
                         <img src="./img/1.png" alt="A">
                     </div>
                     <div class="image-title">A</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('B')">
                     <div class="image-placeholder">
                         <img src="./img/2.png" alt="B">
                     </div>
                     <div class="image-title">B</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('C')">
                     <div class="image-placeholder">
                         <img src="./img/3.png" alt="C">
                     </div>
                     <div class="image-title">C</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('D')">
                     <div class="image-placeholder">
                         <img src="./img/4.png" alt="D">
                     </div>
                     <div class="image-title">D</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('E')">
                     <div class="image-placeholder">
                         <img src="./img/5.png" alt="E">
                     </div>
                     <div class="image-title">E</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('F')">
                     <div class="image-placeholder">
                         <img src="./img/6.png" alt="F">
                     </div>
                     <div class="image-title">F</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('G')">
                     <div class="image-placeholder">
                         <img src="./img/7.png" alt="G">
                     </div>
                     <div class="image-title">G</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('H')">
                     <div class="image-placeholder">
                         <img src="./img/8.png" alt="H">
                     </div>
                     <div class="image-title">H</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('I')">
                     <div class="image-placeholder">
                         <img src="./img/9.png" alt="I">
                     </div>
                     <div class="image-title">I</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('J')">
                     <div class="image-placeholder">
                         <img src="./img/10.png" alt="J">
                     </div>
                     <div class="image-title">J</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('K')">
                     <div class="image-placeholder">
                         <img src="./img/11.png" alt="K">
                     </div>
                     <div class="image-title">K</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('L')">
                     <div class="image-placeholder">
                         <img src="./img/12.png" alt="L">
                     </div>
                     <div class="image-title">L</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('M')">
                     <div class="image-placeholder">
                         <img src="./img/13.png" alt="M">
                     </div>
                     <div class="image-title">M</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('N')">
                     <div class="image-placeholder">
                         <img src="./img/14.png" alt="N">
                     </div>
                     <div class="image-title">N</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('O')">
                     <div class="image-placeholder">
                         <img src="./img/15.png" alt="O">
                     </div>
                     <div class="image-title">O</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('P')">
                     <div class="image-placeholder">
                         <img src="./img/16.png" alt="P">
                     </div>
                     <div class="image-title">P</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('Q')">
                     <div class="image-placeholder">
                         <img src="./img/17.png" alt="Q">
                     </div>
                     <div class="image-title">Q</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('R')">
                     <div class="image-placeholder">
                         <img src="./img/18.png" alt="R">
                     </div>
                     <div class="image-title">R</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('S')">
                     <div class="image-placeholder">
                         <img src="./img/19.png" alt="S">
                     </div>
                     <div class="image-title">S</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('T')">
                     <div class="image-placeholder">
                         <img src="./img/20.png" alt="T">
                     </div>
                     <div class="image-title">T</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('U')">
                     <div class="image-placeholder">
                         <img src="./img/21.png" alt="U">
                     </div>
                     <div class="image-title">U</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('V')">
                     <div class="image-placeholder">
                         <img src="./img/22.png" alt="V">
                     </div>
                     <div class="image-title">V</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('W')">
                     <div class="image-placeholder">
                         <img src="./img/23.png" alt="W">
                     </div>
                     <div class="image-title">W</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('X')">
                     <div class="image-placeholder">
                         <img src="./img/24.png" alt="X">
                     </div>
                     <div class="image-title">X</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('Y')">
                     <div class="image-placeholder">
                         <img src="./img/25.png" alt="Y">
                     </div>
                     <div class="image-title">Y</div>
                 </div>
-                <div class="image-item">
+                <div class="image-item" onclick="showCamera('Z')">
                     <div class="image-placeholder">
                         <img src="./img/26.png" alt="Z">
                     </div>
@@ -388,17 +385,22 @@
     </div>
 
     <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const pageParam = urlParams.get('page');
+        
+        if (pageParam) {
+            showPage(pageParam);
+        }
+
         function showPage(page) {
             const mainPage = document.getElementById('mainPage');
             const legoPage = document.getElementById('legoPage');
             const blockPage = document.getElementById('blockPage');
 
-            // 모든 페이지 숨기기
             mainPage.style.display = 'none';
             legoPage.classList.remove('active');
             blockPage.classList.remove('active');
 
-            // 선택된 페이지 보이기
             if (page === 'main') {
                 mainPage.style.display = 'flex';
             } else if (page === 'lego') {
@@ -406,6 +408,12 @@
             } else if (page === 'block') {
                 blockPage.classList.add('active');
             }
+        }
+
+        function showCamera(title) {
+            const legoPage = document.getElementById('legoPage');
+            const from = legoPage.classList.contains('active') ? 'lego' : 'block';
+            window.location.href = `/camera?title=${encodeURIComponent(title)}&from=${from}`;
         }
     </script>
 </body>
