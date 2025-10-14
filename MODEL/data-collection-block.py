@@ -16,7 +16,7 @@ def connect_camera():
     return camera, converter
 
 def capture_roi_image(camera, converter, filename):
-    """ROI 영역 캡처"""
+    """ROI 영역 캡처 및 이진화"""
     # 고정 ROI
     roi = (711, 409, 1260, 971)
     
@@ -34,10 +34,16 @@ def capture_roi_image(camera, converter, filename):
 
         # 대비 증가
         alpha = 1.5
-
         roi_img = cv2.convertScaleAbs(roi_img, alpha=alpha)
         
-        cv2.imwrite(filename, roi_img)
+        # 그레이스케일 변환
+        gray = cv2.cvtColor(roi_img, cv2.COLOR_BGR2GRAY)
+        
+        # 이진화 (Otsu's method)
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+        
+        # 이진화된 이미지 저장
+        cv2.imwrite(filename, binary)
         print(f"✓ 저장: {filename}")
     
     grab_result.Release()
@@ -64,7 +70,7 @@ def main():
         client.write_register(11, 100)
         time.sleep(0.5)
         
-        # 10번 반복
+        # 50번 반복
         for i in range(1, 51):
             print(f"\n=== {i}/50 ===")
             
@@ -84,7 +90,7 @@ def main():
             client.write_register(0, 0)
             time.sleep(2)
             
-            # 캡처
+            # 캡처 (이진화)
             filename = f"./data_block/block_{i}.png"
             capture_roi_image(camera, converter, filename)
         
