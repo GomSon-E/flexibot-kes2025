@@ -59,28 +59,52 @@ class IntegratedSystem:
         print("시스템 초기화 시작...")
         print("=" * 60)
         
-        # 카메라 연결
+        # 1. 카메라 연결
         if self.camera.connect_camera():
             self.camera.start_capture()
             print("✓ 카메라 시작")
         else:
             print("⚠️ 카메라 없이 시작")
         
-        # 피더 연결
+        # 2. 피더 연결 및 조명 켜기
         if self.feeder.connect():
             print("✓ 피더 연결")
+            # 조명 자동 켜기 (밝기 10%)
+            if self.feeder.set_light(True, 10):
+                print("✓ 피더 조명 ON (10%)")
+            else:
+                print("⚠️ 피더 조명 제어 실패")
         else:
             print("⚠️ 피더 없이 시작")
             
-        # 실린더 연결
+        # 3. 실린더 연결 및 초기화
         if self.cylinder.connect():
             print("✓ 실린더 연결")
+            # 모든 실린더 OFF 상태로 초기화
+            for i in range(4):
+                getattr(self.cylinder, f'cylinder_{i}_off')()
+            print("✓ 실린더 초기화 완료 (모두 OFF)")
         else:
             print("⚠️ 실린더 없이 시작")
             
-        # 로봇 연결
+        # 4. 로봇 연결 및 초기화
         if self.robot.connect():
             print("✓ 로봇 연결")
+            
+            # Task 0: 로봇 초기화
+            print("\n[자동 실행] Task 0: 로봇 초기화")
+            response0 = self.robot.robot_init()
+            if response0:
+                print(f"✓ Task 0 완료: {response0}")
+                
+                print("\n[자동 실행] Task 1: 툴 플레이트 초기화")
+                response1 = self.robot.tool_plate_init()
+                if response1:
+                    print(f"✓ Task 1 완료: {response1}")
+                else:
+                    print("⚠️ Task 1 응답 없음")
+            else:
+                print("⚠️ Task 0 응답 없음")
         else:
             print("⚠️ 로봇 없이 시작")
         
@@ -92,6 +116,18 @@ class IntegratedSystem:
     async def shutdown(self):
         """시스템 종료"""
         print("\n시스템 종료 중...")
+        
+        # 조명 끄기
+        if self.feeder.client:
+            self.feeder.set_light(False, 0)
+            print("✓ 피더 조명 OFF")
+        
+        # 실린더 모두 OFF
+        if self.cylinder.connected:
+            for i in range(4):
+                getattr(self.cylinder, f'cylinder_{i}_off')()
+            print("✓ 실린더 모두 OFF")
+        
         self.camera.stop()
         self.feeder.disconnect()
         self.cylinder.disconnect()
@@ -123,7 +159,6 @@ def generate_frames():
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
         else:
-            # 프레임이 없을 때도 잠시 대기
             import time
             time.sleep(0.1)
 
@@ -420,5 +455,5 @@ if __name__ == "__main__":
         host="0.0.0.0",
         port=8000,
         log_level="info",
-        reload=False  # 프로덕션에서는 False
+        reload=False
     )
