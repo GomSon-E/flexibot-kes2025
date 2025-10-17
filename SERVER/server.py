@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 import os
 import asyncio
+import webbrowser
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 
@@ -112,6 +113,11 @@ class IntegratedSystem:
         print("=" * 60)
         print("시스템 초기화 완료")
         print("=" * 60)
+        
+        # 5. 브라우저 자동 실행
+        await asyncio.sleep(1)  # 서버 완전 시작 대기
+        webbrowser.open('http://localhost:8000')
+        print("\n🌐 브라우저 자동 실행: http://localhost:8000\n")
     
     async def shutdown(self):
         """시스템 종료"""
@@ -131,7 +137,7 @@ class IntegratedSystem:
         self.camera.stop()
         self.feeder.disconnect()
         self.cylinder.disconnect()
-        self.robot.disconnect()
+        # self.robot.disconnect()
         print("✓ 시스템 종료 완료")
 
 # 시스템 인스턴스
