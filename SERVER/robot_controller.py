@@ -2,34 +2,45 @@ import socket
 import time
 
 class RobotController:
-    """로봇 컨트롤러"""
     
-    def __init__(self, host='192.168.0.10', port=64512):
+    def __init__(self, host='192.168.0.10', port=64512, max_retries=3, max_connect_retries=100):
         """
         초기화
         
         Args:
             host: 로봇 IP 주소
             port: 로봇 포트 번호
+            max_retries: 최대 재시도 횟수
+            max_connect_retries: 최대 연결 시도 횟수
         """
         self.host = host
         self.port = port
+        self.max_retries = max_retries
+        self.max_connect_retries = max_connect_retries
         self.sock = None
         self.connected = False
     
     def connect(self):
-        """로봇 연결"""
-        try:
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.settimeout(30)  # 30초 타임아웃
-            self.sock.connect((self.host, self.port))
-            self.connected = True
-            print(f"✓ 로봇 연결 성공: {self.host}:{self.port}")
-            return True
-        except Exception as e:
-            print(f"✗ 로봇 연결 실패: {e}")
-            self.connected = False
-            return False
+        """로봇 연결 (최대 100회 시도)"""
+        for attempt in range(1, self.max_connect_retries + 1):
+            try:
+                print(f"연결 시도 {attempt}/{self.max_connect_retries}...")
+                self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.sock.settimeout(30)  # 30초 타임아웃
+                self.sock.connect((self.host, self.port))
+                self.connected = True
+                print(f"✓ 로봇 연결 성공: {self.host}:{self.port}")
+                return True
+            except Exception as e:
+                print(f"✗ 연결 실패 ({attempt}/{self.max_connect_retries}): {e}")
+                self.connected = False
+                if self.sock:
+                    self.sock.close()
+                if attempt < self.max_connect_retries:
+                    time.sleep(1)  # 1초 대기 후 재시도
+        
+        print(f"\n✗ 최대 연결 시도 횟수 초과 ({self.max_connect_retries}회)")
+        return False
     
     def disconnect(self):
         """연결 종료"""
@@ -53,32 +64,55 @@ class RobotController:
             str: 로봇 응답 메시지
             None: 실패
         """
-        if not self.connected:
-            print("✗ 로봇이 연결되지 않았습니다")
-            return None
+        retry_count = 0
         
-        try:
-            # 메시지 생성: (A,B,C,D,E)
-            message = f"({task_num},{x},{y},{angle},{plate_seq})\n"
+        while retry_count < self.max_retries:
+            # 재시도 시 재연결
+            if retry_count > 0:
+                print(f"\n⚠️  재시도 {retry_count}/{self.max_retries}")
+                self.disconnect()
+                time.sleep(1)
+                if not self.connect():
+                    retry_count += 1
+                    continue
             
-            print(f"→ 전송: {message.strip()}")
+            # 연결 확인
+            if not self.connected:
+                print("✗ 로봇이 연결되지 않았습니다")
+                retry_count += 1
+                continue
             
-            # 메시지 전송
-            self.sock.sendall(message.encode('utf-8'))
-            
-            # 응답 대기 (블로킹)
-            response = self.sock.recv(1024).decode('utf-8').strip()
-            
-            print(f"← 응답: {response}")
-            
-            return response
-            
-        except socket.timeout:
-            print("✗ 응답 타임아웃")
-            return None
-        except Exception as e:
-            print(f"✗ 통신 오류: {e}")
-            return None
+            try:
+                # 메시지 생성: ,A,B,C,D,E,\n
+                message = f",{task_num},{x},{y},{angle},{plate_seq},\n"
+                
+                print(f"→ 전송: {message.strip()}")
+                
+                # 메시지 전송
+                self.sock.sendall(message.encode('utf-8'))
+                
+                # 응답 대기 (블로킹)
+                response = self.sock.recv(1024).decode('utf-8').strip()
+
+                if response == "":
+                    print("✗ 빈 응답 수신")
+                    retry_count += 1
+                    continue
+                
+                print(f"← 응답: {response}")
+                return response
+                
+            except socket.timeout:
+                print("✗ 응답 타임아웃")
+                retry_count += 1
+                continue
+            except Exception as e:
+                print(f"✗ 통신 오류: {e}")
+                retry_count += 1
+                continue
+        
+        print(f"\n✗ 최대 재시도 횟수 초과 ({self.max_retries}회)")
+        return None
     
     # Task 0: 로봇 초기화
     def robot_init(self):
@@ -153,7 +187,7 @@ class RobotController:
             x: 픽업 X 좌표
             y: 픽업 Y 좌표
             angle: 회전각
-            plate_seq: 플레이트 순번
+            plate_seq: 플레이트 순번 (블럭=1, 레고=2)
         """
         print(f"\n[Task 8] 잔량배출 P&P - 위치({x}, {y}), 각도{angle}°, Plate#{plate_seq}")
         return self.send_task(8, x, y, angle, plate_seq)
