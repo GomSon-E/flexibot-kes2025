@@ -75,6 +75,28 @@
             color: #FF6B9D;
             text-align: center;
         }
+
+        .status-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #FFF9E6;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .status-info.processing {
+            background: #FFE5CC;
+            color: #FF6B9D;
+            font-weight: bold;
+        }
+
+        .status-info.completed {
+            background: #D4EDDA;
+            color: #155724;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -87,6 +109,9 @@
         <div class="camera-info">
             <p>🎯 YOLO 모델로 실시간 객체 인식 중...</p>
         </div>
+        <div class="status-info" id="statusInfo">
+            대기 중...
+        </div>
     </div>
 
     <script>
@@ -97,6 +122,39 @@
         
         if (title) {
             document.getElementById('cameraTitle').textContent = `${title} - 실시간 객체 인식`;
+        }
+
+        // 레고 페이지에서 온 경우 자동으로 프로세스 시작
+        if (from === 'lego') {
+            startLegoProcess(title);
+        }
+
+        async function startLegoProcess(shape) {
+            const statusInfo = document.getElementById('statusInfo');
+            statusInfo.className = 'status-info processing';
+            statusInfo.textContent = `${shape} 그림 그리는 중...`;
+
+            // 백그라운드에서 API 호출
+            fetch('/api/start_lego_drawing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ shape: shape })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('레고 그림 그리는 중:', result);
+                statusInfo.className = 'status-info processing';
+            statusInfo.textContent = `${shape} 그림 그리는 중...`;
+            })
+            .catch(error => {
+                console.error('API 호출 오류:', error);
+                statusInfo.className = 'status-info';
+                statusInfo.textContent = '서버 통신 오류가 발생했습니다.';
+            });
+            
+            // API 호출과 별개로 카메라는 계속 스트리밍됨
         }
 
         function goBack() {

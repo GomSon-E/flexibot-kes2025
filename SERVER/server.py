@@ -275,7 +275,7 @@ async def robot_init():
 # ===== 레고 프로세스 API =====
 @app.post("/api/start_lego_drawing")
 async def start_lego_drawing(req: LegoDrawingRequest):
-    """레고 그림 그리기 시작"""
+    """레고 그림 그리기 시작 (백그라운드 실행)"""
     if not system.is_initialized:
         raise HTTPException(status_code=503, detail="시스템 초기화되지 않음")
     
@@ -296,11 +296,25 @@ async def start_lego_drawing(req: LegoDrawingRequest):
     if not shape_en:
         raise HTTPException(status_code=400, detail=f"지원하지 않는 그림: {req.shape}")
     
-    try:
-        result = await system.lego_process.execute_lego_drawing(shape_en)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # 백그라운드 스레드에서 실행
+    import threading
+    
+    def run_lego_process():
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(system.lego_process.execute_lego_drawing(shape_en))
+        loop.close()
+    
+    thread = threading.Thread(target=run_lego_process, daemon=True)
+    thread.start()
+    
+    # 즉시 응답 반환
+    return {
+        "status": "started",
+        "shape": req.shape,
+        "message": f"{req.shape} 그림 그리기 시작됨"
+    }
 
 # ===== 시퀀스 실행 API =====
 @app.post("/api/execute_sequence")

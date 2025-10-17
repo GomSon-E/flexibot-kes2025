@@ -1,7 +1,6 @@
-# SERVER/lego_process.py
 import json
 import os
-import time
+import asyncio
 
 def camera_to_robot(camera_x, camera_y):
     """카메라 좌표를 로봇 좌표로 변환"""
@@ -69,18 +68,18 @@ class LegoProcess:
                 print("  - 피더 바운스 동작")
                 self.system.feeder.client.write_register(1, 10113)  # 바운스(13)
                 self.system.feeder.client.write_register(0, 1)      # 시작
-                time.sleep(0.5)
+                await asyncio.sleep(0.5)
                 self.system.feeder.client.write_register(0, 0)      # 정지
                 
                 # 피더 집합 동작
                 print("  - 피더 집합 동작 3초")
                 self.system.feeder.client.write_register(1, 10114)  # 집합(14)
                 self.system.feeder.client.write_register(0, 1)      # 시작
-                time.sleep(3)
+                await asyncio.sleep(3.0)
                 self.system.feeder.client.write_register(0, 0)      # 정지
                 
                 # 재검출
-                time.sleep(1)
+                await asyncio.sleep(1.0)
                 green_coords = self.get_green_centroids()
                 
                 if not green_coords:
@@ -95,7 +94,7 @@ class LegoProcess:
             camera_x = self.system.camera.roi[0] + roi_x
             camera_y = self.system.camera.roi[1] + roi_y
             
-            # 좌표 변환
+            # 로봇 좌표로 변환
             robot_x, robot_y = camera_to_robot(camera_x, camera_y)
             
             print(f"\n[{plate_index + 1}/{total_plates}] Plate #{plate_seq}")
@@ -137,9 +136,9 @@ class LegoProcess:
         # 대기 위치로 이동
         print("  - 대기 위치로 이동")
         self.system.robot.robot_init()
-        
+
         print("\n✓ 레고 그림 그리기 완료!")
-        
+
         return {
             "status": "completed",
             "shape": shape_name,
