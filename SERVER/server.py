@@ -1,17 +1,20 @@
-from fastapi import FastAPI
+# SERVER/server.py
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
-from pypylon import pylon
-from pymodbus.client import ModbusTcpClient
-import cv2
-import numpy as np
-from ultralytics import YOLO
-import threading
 import os
+import asyncio
 from pydantic import BaseModel
+from typing import List, Optional, Dict, Any
 
-# 요청 모델
+# 컨트롤러 임포트
+from camera_controller import CameraController
+from feeder_controller import FeederController
+from cylinder_controller import CylinderController
+from robot_controller import RobotController
+
+# ===== 요청/응답 모델 =====
 class ROIRequest(BaseModel):
     x: int
     y: int
@@ -20,250 +23,109 @@ class LightRequest(BaseModel):
     on: bool
     brightness: int
 
+class CylinderRequest(BaseModel):
+    cylinder_num: int  # 0, 1, 2, 3
+    action: str  # "on", "off", "pulse"
+    on_time: Optional[float] = 1.0
+    off_time: Optional[float] = 1.0
+
+class RobotTaskRequest(BaseModel):
+    task_num: int
+    x: Optional[int] = 0
+    y: Optional[int] = 0
+    angle: Optional[int] = 0
+    plate_seq: Optional[int] = 0
+
+class SequenceStep(BaseModel):
+    type: str  # "cylinder", "robot", "light", "wait", "camera"
+    params: Dict[str, Any]
+
+class SequenceRequest(BaseModel):
+    name: str
+    steps: List[SequenceStep]
+
+# ===== 통합 시스템 클래스 =====
+class IntegratedSystem:
+    def __init__(self):
+        self.camera = CameraController()
+        self.feeder = FeederController()
+        self.cylinder = CylinderController()
+        self.robot = RobotController()
+        self.is_initialized = False
+        
+    async def initialize(self):
+        """시스템 초기화"""
+        print("=" * 60)
+        print("시스템 초기화 시작...")
+        print("=" * 60)
+        
+        # 카메라 연결
+        if self.camera.connect_camera():
+            self.camera.start_capture()
+            print("✓ 카메라 시작")
+        else:
+            print("⚠️ 카메라 없이 시작")
+        
+        # 피더 연결
+        if self.feeder.connect():
+            print("✓ 피더 연결")
+        else:
+            print("⚠️ 피더 없이 시작")
+            
+        # 실린더 연결
+        if self.cylinder.connect():
+            print("✓ 실린더 연결")
+        else:
+            print("⚠️ 실린더 없이 시작")
+            
+        # 로봇 연결
+        if self.robot.connect():
+            print("✓ 로봇 연결")
+        else:
+            print("⚠️ 로봇 없이 시작")
+        
+        self.is_initialized = True
+        print("=" * 60)
+        print("시스템 초기화 완료")
+        print("=" * 60)
+    
+    async def shutdown(self):
+        """시스템 종료"""
+        print("\n시스템 종료 중...")
+        self.camera.stop()
+        self.feeder.disconnect()
+        self.cylinder.disconnect()
+        self.robot.disconnect()
+        print("✓ 시스템 종료 완료")
+
+# 시스템 인스턴스
+system = IntegratedSystem()
+
+# ===== FastAPI 앱 설정 =====
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
-    if camera.connect_camera():
-        camera.start_capture()
-    else:
-        print("⚠️ 카메라 없이 시작")
-    
-    # 피더 연결
-    if feeder.connect():
-        print("✓ 피더 연결 완료")
-    else:
-        print("⚠️ 피더 없이 시작")
-    
+    await system.initialize()
     yield
-    
-    # Shutdown
-    camera.stop()
-    feeder.disconnect()
+    await system.shutdown()
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="레고 & 블럭 통합 제어 시스템",
+    version="1.0.0",
+    lifespan=lifespan
+)
 
-class FeederController:
-    def __init__(self, ip='192.168.1.100', port=502):
-        self.ip = ip
-        self.port = port
-        self.client = None
-        
-    def connect(self):
-        """피더 연결"""
-        try:
-            self.client = ModbusTcpClient(self.ip, port=self.port)
-            return self.client.connect()
-        except Exception as e:
-            print(f"피더 연결 실패: {e}")
-            return False
-    
-    def set_light(self, on: bool, brightness: int = 0):
-        """
-        조명 제어
-        on: True/False
-        brightness: 0-100 (실제로는 0-1000으로 변환)
-        """
-        if not self.client:
-            return False
-        
-        try:
-            # P0.10: 조명 스위치
-            self.client.write_register(10, 1 if on else 0)
-            
-            if on:
-                # P0.11: 밝기 (0-100% -> 0-1000)
-                brightness_value = int(brightness * 10)
-                self.client.write_register(11, brightness_value)
-            
-            return True
-        except Exception as e:
-            print(f"조명 제어 실패: {e}")
-            return False
-    
-    def disconnect(self):
-        """연결 종료"""
-        if self.client:
-            self.client.close()
-
-class CameraInference:
-    def __init__(self, model_path='../MODEL/final_lego_model.pt'):
-        self.camera = None
-        self.converter = pylon.ImageFormatConverter()
-        self.converter.OutputPixelFormat = pylon.PixelType_BGR8packed
-        self.converter.OutputBitAlignment = pylon.OutputBitAlignment_MsbAligned
-        
-        # ROI 설정
-        self.roi = [684, 421, 1256, 978]  # [x, y, w, h]
-        
-        # YOLO 모델 로드
-        self.model = YOLO(model_path)
-        print(f"✓ 모델 로드: {model_path}")
-        
-        self.lock = threading.Lock()
-        self.current_frame = None
-        self.running = False
-        
-        # 최신 검출 결과 저장
-        self.latest_results = None
-        
-    def set_roi(self, x: int, y: int):
-        """ROI 위치 변경"""
-        with self.lock:
-            self.roi[0] = x
-            self.roi[1] = y
-        print(f"✓ ROI 변경: ({x}, {y})")
-        
-    def connect_camera(self):
-        """카메라 연결"""
-        try:
-            tl_factory = pylon.TlFactory.GetInstance()
-            devices = tl_factory.EnumerateDevices()
-            
-            if len(devices) == 0:
-                print("✗ 연결된 카메라가 없습니다")
-                return False
-            
-            self.camera = pylon.InstantCamera(tl_factory.CreateFirstDevice())
-            self.camera.Open()
-            
-            print(f"✓ 카메라 연결: {self.camera.GetDeviceInfo().GetModelName()}")
-            return True
-            
-        except Exception as e:
-            print(f"✗ 카메라 연결 실패: {e}")
-            return False
-    
-    def start_capture(self):
-        """캡처 시작"""
-        if not self.camera:
-            return False
-        
-        self.running = True
-        self.camera.StartGrabbing(pylon.GrabStrategy_LatestImageOnly)
-        threading.Thread(target=self._capture_loop, daemon=True).start()
-        return True
-    
-    def get_front_centroids(self):
-        """
-        연두색(front) 객체의 중심점 추출
-        
-        Returns:
-            list: [(center_x, center_y), ...] 형태의 중심점 리스트
-        """
-        with self.lock:
-            if self.latest_results is None:
-                return []
-            
-            results = self.latest_results
-        
-        centroids = []
-        
-        if results[0].boxes is not None:
-            boxes = results[0].boxes.xyxy.cpu().numpy()
-            classes = results[0].boxes.cls.cpu().numpy()
-            confs = results[0].boxes.conf.cpu().numpy()
-            
-            for box, cls, conf in zip(boxes, classes, confs):
-                if conf < 0.8:
-                    continue
-                
-                # front 클래스만 처리
-                if int(cls) == 1:
-                    x1, y1, x2, y2 = map(int, box)
-                    center_x = (x1 + x2) // 2
-                    center_y = (y1 + y2) // 2
-                    centroids.append((center_x, center_y))
-
-            print(centroids)
-        
-        return centroids
-    
-    def _capture_loop(self):
-        """실시간 캡처 및 추론"""
-        while self.running and self.camera.IsGrabbing():
-            try:
-                grab_result = self.camera.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
-                
-                if grab_result.GrabSucceeded():
-                    image = self.converter.Convert(grab_result)
-                    img = image.GetArray()
-                    
-                    # ROI 크롭
-                    with self.lock:
-                        x, y, w, h = self.roi
-                    
-                    roi_img = img[y:y+h, x:x+w].copy()
-                    
-                    # YOLO 추론
-                    results = self.model(roi_img, verbose=False)
-                    
-                    # 최신 결과 저장
-                    with self.lock:
-                        self.latest_results = results
-                    
-                    # 커스텀 시각화
-                    annotated_frame = roi_img.copy()
-                    
-                    if results[0].boxes is not None:
-                        boxes = results[0].boxes.xyxy.cpu().numpy()
-                        classes = results[0].boxes.cls.cpu().numpy()
-                        confs = results[0].boxes.conf.cpu().numpy()
-                        
-                        for box, cls, conf in zip(boxes, classes, confs):
-                            if conf < 0.8:
-                                continue
-                            
-                            x1, y1, x2, y2 = map(int, box)
-                            
-                            # 색상 설정
-                            if int(cls) == 0:  # back
-                                color = (0, 0, 255)  # 붉은색
-                            else:  # front
-                                color = (0, 255, 0)  # 연두색
-                            
-                            # 투명 박스
-                            overlay = annotated_frame.copy()
-                            cv2.rectangle(overlay, (x1, y1), (x2, y2), color, -1)
-                            annotated_frame = cv2.addWeighted(annotated_frame, 0.7, overlay, 0.3, 0)
-                            
-                            # 테두리
-                            cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), color, 2)
-                    
-                    with self.lock:
-                        self.current_frame = annotated_frame
-                
-                grab_result.Release()
-                
-            except Exception as e:
-                print(f"캡처 오류: {e}")
-                break
-    
-    def get_frame(self):
-        """현재 프레임 반환"""
-        with self.lock:
-            if self.current_frame is not None:
-                ret, buffer = cv2.imencode('.jpg', self.current_frame)
-                return buffer.tobytes()
-        return None
-    
-    def stop(self):
-        """정지"""
-        self.running = False
-        if self.camera:
-            self.camera.StopGrabbing()
-            self.camera.Close()
-
-# 전역 인스턴스
-camera = CameraInference()
-feeder = FeederController()
-
+# ===== 비디오 스트리밍 =====
 def generate_frames():
-    """프레임 생성기"""
+    """비디오 스트림 생성"""
     while True:
-        frame = camera.get_frame()
+        frame = system.camera.get_frame()
         if frame:
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+        else:
+            # 프레임이 없을 때도 잠시 대기
+            import time
+            time.sleep(0.1)
 
 @app.get("/video_feed")
 async def video_feed():
@@ -273,10 +135,227 @@ async def video_feed():
         media_type="multipart/x-mixed-replace; boundary=frame"
     )
 
+# ===== 카메라 제어 API =====
+@app.post("/api/set_roi")
+async def set_roi(req: ROIRequest):
+    """ROI 위치 변경"""
+    system.camera.set_roi(req.x, req.y)
+    return {"status": "ok", "x": req.x, "y": req.y}
+
+@app.get("/api/get_centroids")
+async def get_centroids():
+    """검출된 객체 중심점 반환"""
+    centroids = system.camera.get_front_centroids()
+    return {
+        "status": "ok",
+        "count": len(centroids),
+        "centroids": centroids
+    }
+
+# ===== 조명 제어 API =====
+@app.post("/api/light_control")
+async def light_control(req: LightRequest):
+    """조명 제어"""
+    success = system.feeder.set_light(req.on, req.brightness)
+    return {
+        "status": "ok" if success else "error",
+        "on": req.on,
+        "brightness": req.brightness
+    }
+
+# ===== 실린더 제어 API =====
+@app.post("/api/cylinder_control")
+async def cylinder_control(req: CylinderRequest):
+    """실린더 제어"""
+    if not system.cylinder.connected:
+        raise HTTPException(status_code=503, detail="실린더 미연결")
+    
+    try:
+        if req.action == "on":
+            getattr(system.cylinder, f'cylinder_{req.cylinder_num}_on')()
+        elif req.action == "off":
+            getattr(system.cylinder, f'cylinder_{req.cylinder_num}_off')()
+        elif req.action == "pulse":
+            getattr(system.cylinder, f'cylinder_{req.cylinder_num}_pulse')(
+                req.on_time, req.off_time
+            )
+        else:
+            raise ValueError(f"Invalid action: {req.action}")
+        
+        return {
+            "status": "ok",
+            "cylinder": req.cylinder_num,
+            "action": req.action
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ===== 로봇 제어 API =====
+@app.post("/api/robot_task")
+async def robot_task(req: RobotTaskRequest):
+    """로봇 작업 실행"""
+    if not system.robot.connected:
+        raise HTTPException(status_code=503, detail="로봇 미연결")
+    
+    response = system.robot.send_task(
+        req.task_num,
+        req.x,
+        req.y,
+        req.angle,
+        req.plate_seq
+    )
+    
+    if response:
+        return {
+            "status": "ok",
+            "task": req.task_num,
+            "response": response
+        }
+    else:
+        raise HTTPException(status_code=500, detail="로봇 응답 없음")
+
+@app.post("/api/robot_init")
+async def robot_init():
+    """로봇 초기화"""
+    if not system.robot.connected:
+        raise HTTPException(status_code=503, detail="로봇 미연결")
+    
+    response = system.robot.robot_init()
+    return {"status": "ok" if response else "error", "response": response}
+
+# ===== 시퀀스 실행 API =====
+@app.post("/api/execute_sequence")
+async def execute_sequence(req: SequenceRequest):
+    """복합 작업 시퀀스 실행"""
+    results = []
+    
+    print(f"\n시퀀스 실행: {req.name}")
+    print("=" * 40)
+    
+    for i, step in enumerate(req.steps):
+        print(f"Step {i+1}: {step.type}")
+        
+        try:
+            if step.type == "cylinder":
+                cylinder_num = step.params['cylinder']
+                action = step.params['action']
+                
+                if action == "on":
+                    getattr(system.cylinder, f'cylinder_{cylinder_num}_on')()
+                elif action == "off":
+                    getattr(system.cylinder, f'cylinder_{cylinder_num}_off')()
+                elif action == "pulse":
+                    on_time = step.params.get('on_time', 1.0)
+                    off_time = step.params.get('off_time', 1.0)
+                    getattr(system.cylinder, f'cylinder_{cylinder_num}_pulse')(
+                        on_time, off_time
+                    )
+                
+                results.append({
+                    "step": i+1,
+                    "type": "cylinder",
+                    "result": f"Cylinder {cylinder_num} {action}"
+                })
+                
+            elif step.type == "robot":
+                task_num = step.params['task']
+                x = step.params.get('x', 0)
+                y = step.params.get('y', 0)
+                angle = step.params.get('angle', 0)
+                plate_seq = step.params.get('plate_seq', 0)
+                
+                response = system.robot.send_task(task_num, x, y, angle, plate_seq)
+                results.append({
+                    "step": i+1,
+                    "type": "robot",
+                    "result": response
+                })
+                
+            elif step.type == "light":
+                on = step.params['on']
+                brightness = step.params.get('brightness', 0)
+                system.feeder.set_light(on, brightness)
+                
+                results.append({
+                    "step": i+1,
+                    "type": "light",
+                    "result": f"Light {'on' if on else 'off'}, brightness: {brightness}"
+                })
+                
+            elif step.type == "wait":
+                duration = step.params['duration']
+                await asyncio.sleep(duration)
+                
+                results.append({
+                    "step": i+1,
+                    "type": "wait",
+                    "result": f"Waited {duration} seconds"
+                })
+                
+            elif step.type == "camera":
+                if step.params.get('action') == 'capture':
+                    centroids = system.camera.get_front_centroids()
+                    results.append({
+                        "step": i+1,
+                        "type": "camera",
+                        "result": f"Detected {len(centroids)} objects",
+                        "data": centroids
+                    })
+                    
+        except Exception as e:
+            results.append({
+                "step": i+1,
+                "type": step.type,
+                "error": str(e)
+            })
+            print(f"  ✗ 오류: {e}")
+            continue
+    
+    print("=" * 40)
+    print("시퀀스 완료\n")
+    
+    return {
+        "status": "completed",
+        "sequence": req.name,
+        "results": results
+    }
+
+# ===== 시스템 상태 API =====
+@app.get("/api/system_status")
+async def get_system_status():
+    """전체 시스템 상태 확인"""
+    return {
+        "initialized": system.is_initialized,
+        "modules": {
+            "cylinder": {
+                "connected": system.cylinder.connected,
+                "status": "online" if system.cylinder.connected else "offline"
+            },
+            "robot": {
+                "connected": system.robot.connected,
+                "status": "online" if system.robot.connected else "offline",
+                "host": system.robot.host if system.robot.connected else None
+            },
+            "camera": {
+                "connected": system.camera.camera is not None,
+                "status": "online" if system.camera.camera else "offline",
+                "roi": system.camera.roi if system.camera.camera else None
+            },
+            "feeder": {
+                "connected": system.feeder.client is not None,
+                "status": "online" if system.feeder.client else "offline"
+            }
+        }
+    }
+
+# ===== 웹 페이지 라우팅 =====
 @app.get("/")
 async def root():
     """메인 페이지"""
     html_path = os.path.join(os.path.dirname(__file__), "..", "UI", "index.html")
+    if not os.path.exists(html_path):
+        return HTMLResponse(content="<h1>UI 파일을 찾을 수 없습니다</h1>", status_code=404)
+    
     with open(html_path, "r", encoding="utf-8") as f:
         html_content = f.read()
     return HTMLResponse(content=html_content)
@@ -285,6 +364,9 @@ async def root():
 async def camera_page():
     """카메라 페이지"""
     html_path = os.path.join(os.path.dirname(__file__), "..", "UI", "camera.html")
+    if not os.path.exists(html_path):
+        return HTMLResponse(content="<h1>카메라 페이지를 찾을 수 없습니다</h1>", status_code=404)
+    
     with open(html_path, "r", encoding="utf-8") as f:
         html_content = f.read()
     return HTMLResponse(content=html_content)
@@ -293,31 +375,50 @@ async def camera_page():
 async def control_page():
     """제어 페이지"""
     html_path = os.path.join(os.path.dirname(__file__), "..", "UI", "control.html")
+    if not os.path.exists(html_path):
+        return HTMLResponse(content="<h1>제어 페이지를 찾을 수 없습니다</h1>", status_code=404)
+    
     with open(html_path, "r", encoding="utf-8") as f:
         html_content = f.read()
     return HTMLResponse(content=html_content)
 
-@app.post("/api/set_roi")
-async def set_roi(req: ROIRequest):
-    """ROI 위치 변경"""
-    camera.set_roi(req.x, req.y)
-    return {"status": "ok", "x": req.x, "y": req.y}
-
-@app.post("/api/light_control")
-async def light_control(req: LightRequest):
-    """조명 제어"""
-    success = feeder.set_light(req.on, req.brightness)
+@app.get("/api/test_camera")
+async def test_camera():
+    frame = system.camera.get_frame()
     return {
-        "status": "ok" if success else "error",
-        "on": req.on,
-        "brightness": req.brightness
+        "has_frame": frame is not None,
+        "frame_size": len(frame) if frame else 0,
+        "camera_running": system.camera.running
     }
 
-# 정적 파일
+# ===== 정적 파일 서빙 =====
 img_dir = os.path.join(os.path.dirname(__file__), "..", "UI", "img")
 if os.path.exists(img_dir):
     app.mount("/img", StaticFiles(directory=img_dir), name="img")
 
+css_dir = os.path.join(os.path.dirname(__file__), "..", "UI", "css")
+if os.path.exists(css_dir):
+    app.mount("/css", StaticFiles(directory=css_dir), name="css")
+
+js_dir = os.path.join(os.path.dirname(__file__), "..", "UI", "js")
+if os.path.exists(js_dir):
+    app.mount("/js", StaticFiles(directory=js_dir), name="js")
+
+# ===== 메인 실행 =====
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    
+    print("\n" + "=" * 60)
+    print("레고 & 블럭 통합 제어 시스템")
+    print("=" * 60)
+    print("서버 시작: http://localhost:8000")
+    print("API 문서: http://localhost:8000/docs")
+    print("=" * 60 + "\n")
+    
+    uvicorn.run(
+        app,
+        host="0.0.0.0",
+        port=8000,
+        log_level="info",
+        reload=False  # 프로덕션에서는 False
+    )
