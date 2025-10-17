@@ -4,7 +4,7 @@ import time
 class RobotController:
     """로봇 컨트롤러"""
     
-    def __init__(self, host='192.168.1.200', port=5000):
+    def __init__(self, host='192.168.0.10', port=64512):
         """
         초기화
         
