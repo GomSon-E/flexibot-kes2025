@@ -14,6 +14,7 @@ from camera_controller import CameraController
 from feeder_controller import FeederController
 from cylinder_controller import CylinderController
 from robot_controller import RobotController
+from lego_process import LegoProcess
 
 # ===== 요청/응답 모델 =====
 class ROIRequest(BaseModel):
@@ -45,6 +46,9 @@ class SequenceRequest(BaseModel):
     name: str
     steps: List[SequenceStep]
 
+class LegoDrawingRequest(BaseModel):
+    shape: str  # "하트", "물고기", "스마일", "고양이", "판다", "튤립"
+
 # ===== 통합 시스템 클래스 =====
 class IntegratedSystem:
     def __init__(self):
@@ -52,6 +56,7 @@ class IntegratedSystem:
         self.feeder = FeederController()
         self.cylinder = CylinderController()
         self.robot = RobotController()
+        self.lego_process = None
         self.is_initialized = False
         
     async def initialize(self):
@@ -81,9 +86,8 @@ class IntegratedSystem:
         # 3. 실린더 연결 및 초기화
         if self.cylinder.connect():
             print("✓ 실린더 연결")
-            # 모든 실린더 OFF 상태로 초기화
-            for i in range(4):
-                getattr(self.cylinder, f'cylinder_{i}_off')()
+            self.cylinder.cylinder_0_pulse()
+            self.cylinder.cylinder_2_pulse()
             print("✓ 실린더 초기화 완료 (모두 OFF)")
         else:
             print("⚠️ 실린더 없이 시작")
@@ -109,12 +113,16 @@ class IntegratedSystem:
         else:
             print("⚠️ 로봇 없이 시작")
         
+        # 5. LegoProcess 초기화
+        self.lego_process = LegoProcess(self)
+        print("✓ LegoProcess 초기화")
+        
         self.is_initialized = True
         print("=" * 60)
         print("시스템 초기화 완료")
         print("=" * 60)
         
-        # 5. 브라우저 자동 실행
+        # 6. 브라우저 자동 실행
         await asyncio.sleep(1)  # 서버 완전 시작 대기
         webbrowser.open('http://localhost:8000')
         print("\n🌐 브라우저 자동 실행: http://localhost:8000\n")
@@ -263,6 +271,36 @@ async def robot_init():
     
     response = system.robot.robot_init()
     return {"status": "ok" if response else "error", "response": response}
+
+# ===== 레고 프로세스 API =====
+@app.post("/api/start_lego_drawing")
+async def start_lego_drawing(req: LegoDrawingRequest):
+    """레고 그림 그리기 시작"""
+    if not system.is_initialized:
+        raise HTTPException(status_code=503, detail="시스템 초기화되지 않음")
+    
+    if not system.lego_process:
+        raise HTTPException(status_code=503, detail="LegoProcess 초기화되지 않음")
+    
+    # 한글 -> 영어 매핑
+    shape_map = {
+        "하트": "heart",
+        "물고기": "fish",
+        "스마일": "smile",
+        "고양이": "cat",
+        "판다": "panda",
+        "튤립": "tulip"
+    }
+    
+    shape_en = shape_map.get(req.shape)
+    if not shape_en:
+        raise HTTPException(status_code=400, detail=f"지원하지 않는 그림: {req.shape}")
+    
+    try:
+        result = await system.lego_process.execute_lego_drawing(shape_en)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 # ===== 시퀀스 실행 API =====
 @app.post("/api/execute_sequence")
