@@ -206,37 +206,37 @@
             <button class="back-button" onclick="showPage('main')">← 돌아가기</button>
             <h1 class="page-title">레고로 그림 그리기</h1>
             <div class="image-grid">
-                <div class="image-item" onclick="showCamera('하트')">
+                <div class="image-item" onclick="startLegoDrawing('하트')">
                     <div class="image-placeholder">
                         <img src="./img/heart.png" alt="하트">
                     </div>
                     <div class="image-title">하트</div>
                 </div>
-                <div class="image-item" onclick="showCamera('물고기')">
+                <div class="image-item" onclick="startLegoDrawing('물고기')">
                     <div class="image-placeholder">
                         <img src="./img/fish.png" alt="물고기">
                     </div>
                     <div class="image-title">물고기</div>
                 </div>
-                <div class="image-item" onclick="showCamera('스마일')">
+                <div class="image-item" onclick="startLegoDrawing('스마일')">
                     <div class="image-placeholder">
                         <img src="./img/smile.png" alt="스마일">
                     </div>
                     <div class="image-title">스마일</div>
                 </div>
-                <div class="image-item" onclick="showCamera('고양이')">
+                <div class="image-item" onclick="startLegoDrawing('고양이')">
                     <div class="image-placeholder">
                         <img src="./img/cat.png" alt="고양이">
                     </div>
                     <div class="image-title">고양이</div>
                 </div>
-                <div class="image-item" onclick="showCamera('판다')">
+                <div class="image-item" onclick="startLegoDrawing('판다')">
                     <div class="image-placeholder">
                         <img src="./img/panda.png" alt="판다">
                     </div>
                     <div class="image-title">판다</div>
                 </div>
-                <div class="image-item" onclick="showCamera('튤립')">
+                <div class="image-item" onclick="startLegoDrawing('튤립')">
                     <div class="image-placeholder">
                         <img src="./img/tulip.png" alt="튤립">
                     </div>
@@ -439,7 +439,19 @@
         function showCamera(title) {
             const legoPage = document.getElementById('legoPage');
             const from = legoPage.classList.contains('active') ? 'lego' : 'block';
-            window.location.href = `/camera?title=${encodeURIComponent(title)}&from=${from}`;
+            
+            // 레고 페이지에서 클릭한 경우 API 호출
+            if (from === 'lego') {
+                startLegoDrawing(title);
+            } else {
+                // 블럭은 카메라 페이지로 이동
+                window.location.href = `/camera?title=${encodeURIComponent(title)}&from=${from}`;
+            }
+        }
+
+        async function startLegoDrawing(shape) {
+            // 카메라 페이지로 이동
+            window.location.href = `/camera?title=${encodeURIComponent(shape)}&from=lego`;
         }
 
         function goToControl() {
