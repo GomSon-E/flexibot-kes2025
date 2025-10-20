@@ -15,6 +15,7 @@ from feeder_controller import FeederController
 from cylinder_controller import CylinderController
 from robot_controller import RobotController
 from lego_process import LegoProcess
+from block_process import BlockProcess
 
 # ===== 요청/응답 모델 =====
 class ROIRequest(BaseModel):
@@ -49,6 +50,9 @@ class SequenceRequest(BaseModel):
 class LegoDrawingRequest(BaseModel):
     shape: str  # "하트", "물고기", "스마일", "고양이", "판다", "튤립"
 
+class BlockWritingRequest(BaseModel):
+    alphabet: str  # "A" ~ "Z"
+
 # ===== 통합 시스템 클래스 =====
 class IntegratedSystem:
     def __init__(self):
@@ -57,6 +61,7 @@ class IntegratedSystem:
         self.cylinder = CylinderController()
         self.robot = RobotController()
         self.lego_process = None
+        self.block_process = None
         self.is_initialized = False
         
     async def initialize(self):
@@ -75,9 +80,9 @@ class IntegratedSystem:
         # 2. 피더 연결 및 조명 켜기
         if self.feeder.connect():
             print("✓ 피더 연결")
-            # 조명 자동 켜기 (밝기 10%)
-            if self.feeder.set_light(True, 10):
-                print("✓ 피더 조명 ON (10%)")
+            # 조명 자동 켜기 (밝기 20%)
+            if self.feeder.set_light(True, 20):
+                print("✓ 피더 조명 ON (20%)")
             else:
                 print("⚠️ 피더 조명 제어 실패")
         else:
@@ -113,9 +118,11 @@ class IntegratedSystem:
         else:
             print("⚠️ 로봇 없이 시작")
         
-        # 5. LegoProcess 초기화
+        # 5. LegoProcess 및 BlockProcess 초기화
         self.lego_process = LegoProcess(self)
+        self.block_process = BlockProcess(self)
         print("✓ LegoProcess 초기화")
+        print("✓ BlockProcess 초기화")
         
         self.is_initialized = True
         print("=" * 60)
@@ -314,6 +321,42 @@ async def start_lego_drawing(req: LegoDrawingRequest):
         "status": "started",
         "shape": req.shape,
         "message": f"{req.shape} 그림 그리기 시작됨"
+    }
+
+# ===== 블럭 프로세스 API =====
+@app.post("/api/start_block_writing")
+async def start_block_writing(req: BlockWritingRequest):
+    """블럭 알파벳 쓰기 시작 (백그라운드 실행)"""
+    if not system.is_initialized:
+        raise HTTPException(status_code=503, detail="시스템 초기화되지 않음")
+    
+    if not system.block_process:
+        raise HTTPException(status_code=503, detail="BlockProcess 초기화되지 않음")
+    
+    # 알파벳 검증 (A-Z)
+    if not req.alphabet or len(req.alphabet) != 1 or not req.alphabet.isalpha():
+        raise HTTPException(status_code=400, detail=f"잘못된 알파벳: {req.alphabet}")
+    
+    alphabet = req.alphabet.upper()
+    
+    # 백그라운드 스레드에서 실행
+    import threading
+    
+    def run_block_process():
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(system.block_process.execute_block_writing(alphabet))
+        loop.close()
+    
+    thread = threading.Thread(target=run_block_process, daemon=True)
+    thread.start()
+    
+    # 즉시 응답 반환
+    return {
+        "status": "started",
+        "alphabet": alphabet,
+        "message": f"알파벳 '{alphabet}' 쓰기 시작됨"
     }
 
 # ===== 시퀀스 실행 API =====

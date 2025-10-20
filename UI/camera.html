@@ -124,9 +124,13 @@
             document.getElementById('cameraTitle').textContent = `${title} - 실시간 객체 인식`;
         }
 
-        // 레고 페이지에서 온 경우 자동으로 프로세스 시작
+        // 레고 페이지에서 온 경우 레고 프로세스 시작
         if (from === 'lego') {
             startLegoProcess(title);
+        }
+        // 블럭 페이지에서 온 경우 블럭 프로세스 시작
+        else if (from === 'block') {
+            startBlockProcess(title);
         }
 
         async function startLegoProcess(shape) {
@@ -146,15 +150,39 @@
             .then(result => {
                 console.log('레고 그림 그리는 중:', result);
                 statusInfo.className = 'status-info processing';
-            statusInfo.textContent = `${shape} 그림 그리는 중...`;
+                statusInfo.textContent = `${shape} 그림 그리는 중...`;
             })
             .catch(error => {
                 console.error('API 호출 오류:', error);
                 statusInfo.className = 'status-info';
                 statusInfo.textContent = '서버 통신 오류가 발생했습니다.';
             });
-            
-            // API 호출과 별개로 카메라는 계속 스트리밍됨
+        }
+
+        async function startBlockProcess(alphabet) {
+            const statusInfo = document.getElementById('statusInfo');
+            statusInfo.className = 'status-info processing';
+            statusInfo.textContent = `알파벳 '${alphabet}' 쓰는 중...`;
+
+            // 백그라운드에서 API 호출
+            fetch('/api/start_block_writing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ alphabet: alphabet })
+            })
+            .then(response => response.json())
+            .then(result => {
+                console.log('블럭 알파벳 쓰는 중:', result);
+                statusInfo.className = 'status-info processing';
+                statusInfo.textContent = `알파벳 '${alphabet}' 쓰는 중...`;
+            })
+            .catch(error => {
+                console.error('API 호출 오류:', error);
+                statusInfo.className = 'status-info';
+                statusInfo.textContent = '서버 통신 오류가 발생했습니다.';
+            });
         }
 
         function goBack() {

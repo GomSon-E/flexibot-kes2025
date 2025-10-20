@@ -23,7 +23,7 @@ if client.connect():
         # 조명 켜기 (밝기 50%)
         print("\n조명 켜기")
         client.write_register(10, 1)      # 조명 ON
-        client.write_register(11, 100)    # 밝기 10%
+        client.write_register(11, 200)    # 밝기 10%
         time.sleep(1)
         
         # 집합 동작 3초

@@ -103,8 +103,8 @@ class LegoProcess:
             
             # lego_pick_place 실행
             response = self.system.robot.lego_pick_place(
-                x=int(robot_x),
-                y=int(robot_y),
+                x=robot_x,
+                y=robot_y,
                 angle=0,
                 plate_seq=plate_seq
             )
