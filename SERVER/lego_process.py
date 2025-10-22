@@ -4,7 +4,8 @@ import asyncio
 
 def camera_to_robot(camera_x, camera_y):
     """카메라 좌표를 로봇 좌표로 변환"""
-    robot_x = 0.0001736920 * camera_x + -0.1155149323 * camera_y + 101.5115976961
+    # robot_x = 0.0001736920 * camera_x + -0.1155149323 * camera_y + 101.5115976961
+    robot_x = 0.0001736920 * camera_x + -0.1155149323 * camera_y + 101
     robot_y = -0.1155644249 * camera_x + -0.0000938678 * camera_y + 490.8506301772
     return robot_x, robot_y
 
@@ -40,6 +41,14 @@ class LegoProcess:
         if not response:
             print("✗ 석션 장착 실패")
             return {"status": "error", "message": "석션 장착 실패"}
+        
+
+        # 실린더 0번 pulse
+        print("  - 실린더 0번 pulse")
+        self.system.cylinder.cylinder_0_pulse(on_time=1.0, off_time=1.0)
+
+
+
         
         # 2. coordination.json에서 플레이트 번호 리스트 가져오기
         plate_list = self.coordination.get(shape_name.lower())
@@ -103,8 +112,8 @@ class LegoProcess:
             
             # lego_pick_place 실행
             response = self.system.robot.lego_pick_place(
-                x=robot_x,
-                y=robot_y,
+                x=round(robot_x, 3),
+                y=round(robot_y, 3),
                 angle=0,
                 plate_seq=plate_seq
             )

@@ -9,6 +9,32 @@ import numpy as np
 import sys
 import time
 
+def camera_to_robot(camera_x, camera_y, camera_angle):
+    """카메라 좌표를 로봇 좌표로 변환"""
+    
+    robot_x =  -0.1134748 * camera_y +  50.126
+    robot_y =  -0.1092955 * camera_x +  409.776
+    
+    
+    while camera_angle > 90 or camera_angle < 0 :
+        #-45도 이하일 경우 90도 합산
+        if camera_angle < 0:
+            camera_angle += 90
+        #45도 이상일 경우 90도 차감
+        else :
+            camera_angle -= 90        
+
+
+    #1차 공식 
+    robot_angle = 90 - abs(camera_angle) 
+    
+    #if camera_angle < 0 :
+    #    robot_angle = -robot_angle
+
+    #return robot_x, robot_y, camera_angle
+    return robot_x, robot_y, robot_angle
+
+
 def check_pickable_blocks(img, min_distance=100, padding=20, min_area=5000, max_area=50000):
     """정사각형 블럭 검출 및 회전된 바운딩 박스 (중심점과 각도 시각화)"""
     if img is None:
@@ -16,7 +42,7 @@ def check_pickable_blocks(img, min_distance=100, padding=20, min_area=5000, max_
         return None, []
     
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, binary = cv2.threshold(gray, 127, 255, cv2.THRESH_BINARY_INV)
+    _, binary = cv2.threshold(gray, 139, 255, cv2.THRESH_BINARY_INV)
     
     contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     
@@ -99,8 +125,12 @@ def check_pickable_blocks(img, min_distance=100, padding=20, min_area=5000, max_
                     (int(cx) - 40, int(cy) + 30), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 1)
         
+        #로봇 좌표 변환
+        robot_x,robot_y,robot_angle = camera_to_robot(cx,cy,angle)
+
         # 콘솔 출력
         print(f"블럭 {i+1}: 위치({cx:.3f}, {cy:.3f}), 각도={angle:.3f}°, 최소거리={min_dist:.1f}px, Picking={status}")
+        print(f"로봇 {i+1}: 위치({robot_x:.3f}, {robot_y:.3f}), 각도={robot_angle:.3f}°") 
     
     return result, centers
 

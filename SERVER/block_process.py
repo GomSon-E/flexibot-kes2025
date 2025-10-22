@@ -6,9 +6,29 @@ import numpy as np
 
 def camera_to_robot(camera_x, camera_y, camera_angle):
     """카메라 좌표를 로봇 좌표로 변환"""
-    robot_x = 0.0001736920 * camera_x + -0.1155149323 * camera_y + 101.5115976961
-    robot_y = -0.1155644249 * camera_x + -0.0000938678 * camera_y + 490.8506301772
-    robot_angle = camera_angle - 94.047
+    #robot_x = -0.0016273045 * camera_x + -0.1182909450 * camera_y + -0.0663562452 * camera_angle + 109.8510524433
+    #robot_y = -0.1146515771 * camera_x + 0.0012567711 * camera_y + 0.0323767126 * camera_angle + 486.6392082585
+    robot_x =  -0.1134748 * camera_y +  50.126
+    robot_y =  -0.1092954 * camera_x +  409.776
+    
+    #robot_y = -0.1146515771 * camera_x + 0.0012567711 * camera_y + 486.6392082585
+    # robot_angle = -0.0457792934 * camera_x + 0.1122743643 * camera_y + 1.1534938795 * camera_angle + 239.9608765861
+
+    while camera_angle > 90 or camera_angle < 0 :
+        #-45도 이하일 경우 90도 합산
+        if camera_angle < 0:
+            camera_angle += 90
+        #45도 이상일 경우 90도 차감
+        else :
+            camera_angle -= 90      
+
+
+    #1차 공식 
+    robot_angle = 90 - abs(camera_angle) 
+    if camera_angle < 0 :
+        robot_angle = -robot_angle
+
+    #return robot_x, robot_y, camera_angle
     return robot_x, robot_y, robot_angle
 
 class BlockProcess:
@@ -89,7 +109,7 @@ class BlockProcess:
             
             # 최소 거리가 기준 이상이면 picking 가능
             if min_dist >= self.min_distance:
-
+                '''
                 #2025.10.19 KDH : 각도보정
                 # 각도 범위를 `-45도 ~ +45도`로 조정
                 while angle > 45 or angle < -45 :
@@ -99,7 +119,7 @@ class BlockProcess:
                     #45도 이상일 경우 90도 차감
                     else :
                         angle -= 90                             
-                
+               ''' 
 
                 pickable_blocks.append((cx, cy, angle))
                 print(f"✓ Picking 가능 블럭: 위치({cx:.3f}, {cy:.3f}), 각도={angle:.3f}°")
@@ -181,14 +201,14 @@ class BlockProcess:
             robot_x, robot_y, robot_angle = camera_to_robot(camera_x, camera_y, camera_angle)
             
             print(f"\n[{plate_index + 1}/{total_plates}] Plate #{plate_seq}")
-            print(f"  카메라 좌표: ({camera_x:.3f}, {camera_y:.3f}), 각도: {camera_angle:.3f}°")
-            print(f"  로봇 좌표: ({robot_x:.3f}, {robot_y:.3f}), 각도: {robot_angle:.3f}°")
+            print(f"  (블럭)카메라 좌표: ({camera_x:.3f}, {camera_y:.3f}), 각도: {camera_angle:.3f}°")
+            print(f"  (블럭)로봇 좌표: ({robot_x:.3f}, {robot_y:.3f}), 각도: {robot_angle:.3f}°")
             
             # block_pick_place 실행
             response = self.system.robot.block_pick_place(
-                x=robot_x,
-                y=robot_y,
-                angle=robot_angle,
+                x=round(robot_x, 3),
+                y=round(robot_y, 3),
+                angle=round(robot_angle, 3),
                 plate_seq=plate_seq
             )
             
