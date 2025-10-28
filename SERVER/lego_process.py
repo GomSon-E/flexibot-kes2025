@@ -46,7 +46,8 @@ class LegoProcess:
         # 실린더 0번 pulse
         print("  - 실린더 0번 pulse")
         self.system.cylinder.cylinder_0_pulse(on_time=1.0, off_time=1.0)
-
+        print("  - 실린더 2번 pulse")
+        self.system.cylinder.cylinder_2_pulse(on_time=1.0, off_time=1.0) 
 
 
         

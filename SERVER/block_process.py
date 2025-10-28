@@ -9,7 +9,7 @@ def camera_to_robot(camera_x, camera_y, camera_angle):
     #robot_x = -0.0016273045 * camera_x + -0.1182909450 * camera_y + -0.0663562452 * camera_angle + 109.8510524433
     #robot_y = -0.1146515771 * camera_x + 0.0012567711 * camera_y + 0.0323767126 * camera_angle + 486.6392082585
     robot_x =  -0.1134748 * camera_y +  50.126
-    robot_y =  -0.1092954 * camera_x +  409.776
+    robot_y =  -0.1092954 * camera_x +  408 # 409.776
     
     #robot_y = -0.1146515771 * camera_x + 0.0012567711 * camera_y + 486.6392082585
     # robot_angle = -0.0457792934 * camera_x + 0.1122743643 * camera_y + 1.1534938795 * camera_angle + 239.9608765861
@@ -40,7 +40,7 @@ class BlockProcess:
         self.load_coordination()
         
         # 블럭 검출 파라미터
-        self.min_distance = 100
+        self.min_distance = 80
         self.padding = 20
         self.min_area = 28000
         self.max_area = 30000
@@ -109,18 +109,6 @@ class BlockProcess:
             
             # 최소 거리가 기준 이상이면 picking 가능
             if min_dist >= self.min_distance:
-                '''
-                #2025.10.19 KDH : 각도보정
-                # 각도 범위를 `-45도 ~ +45도`로 조정
-                while angle > 45 or angle < -45 :
-                    #-45도 이하일 경우 90도 합산
-                    if angle < -45:
-                        angle += 90
-                    #45도 이상일 경우 90도 차감
-                    else :
-                        angle -= 90                             
-               ''' 
-
                 pickable_blocks.append((cx, cy, angle))
                 print(f"✓ Picking 가능 블럭: 위치({cx:.3f}, {cy:.3f}), 각도={angle:.3f}°")
         
@@ -142,6 +130,11 @@ class BlockProcess:
         
         # 2. 대기 위치 가기
         self.system.robot.robot_init()
+
+        print("  - 실린더 0번 pulse")
+        self.system.cylinder.cylinder_0_pulse(on_time=1.0, off_time=1.0)
+        print("  - 실린더 2번 pulse")
+        self.system.cylinder.cylinder_2_pulse(on_time=1.0, off_time=1.0) 
         
         # 3. coordination.json에서 플레이트 번호 리스트 가져오기
         plate_list = self.coordination.get(alphabet)
@@ -184,9 +177,9 @@ class BlockProcess:
                 await asyncio.sleep(1.0)
                 pickable_blocks = self.detect_pickable_blocks()
                 
-                if not pickable_blocks:
-                    print("✗ 여전히 블럭 없음 - 프로세스 중단")
-                    break
+                # if not pickable_blocks:
+                #     print("✗ 여전히 블럭 없음 - 프로세스 중단")
+                #     break
             
             # 플레이트 번호와 좌표 가져오기
             plate_seq = plate_list[plate_index]
